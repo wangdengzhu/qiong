@@ -1,0 +1,71 @@
+html {
+    line-height: 1.15;
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: rgba(0,0,0,0);
+}
+
+body,button,input,textarea,select {
+    font-family: 'PingFangSC-Regular',"Helvetica Neue",Helvetica,STHeiTi,sans-serif;
+}
+
+body,div,dl,dt,dd,ul,ol,li,h1,h2,h3,h4,h5,h6,pre,code,form,fieldset,legend,input,textarea,p,blockquote,th,td,hr,button,article,aside,details,figcaption,figure,footer,header,hgroup,menu,nav,section {
+    margin: 0;
+    padding: 0;
+}
+
+input,select,textarea {
+    font-size: 100%;
+}
+
+fieldset,img {
+    border: 0;
+}
+
+ol,ul {
+    list-style: none;
+}
+
+h1,h2,h3,h4,h5,h6,strong,b {
+    font-weight: normal;
+}
+
+address,em,i,cite,s {
+    font-style: normal;
+}
+
+address,caption,cite,code,dfn,em,th,var {
+  font-style: normal;
+  font-weight: 500;
+}
+
+a {
+    text-decoration: none;
+}
+
+a,img {
+    -webkit-touch-callout: none;
+}
+
+table {
+    border-collapse: collapse;
+}
+
+input,select,textarea,button {
+    -webkit-appearance: none;
+    outline: none;
+    border: none;
+    border-radius: 0;
+    background-color: transparent;    
+}
+
+textarea {
+    resize: none;
+}
+
+input::-webkit-outer-spin-button,input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+}
+
+input::-webkit-input-placeholder {
+    color: #bbb;
+}
