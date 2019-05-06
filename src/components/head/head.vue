@@ -17,7 +17,7 @@ export default {
   }
 };
 </script>
-<style scoped>
+<style scoped lang="scss">
 div {
   width: 7.5rem;
   height: 1rem;
