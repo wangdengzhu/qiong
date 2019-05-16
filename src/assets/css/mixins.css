@@ -1,0 +1,109 @@
+
+/*********** 颜色 ************/
+
+/* 主色 */
+
+$main-color:#ff681d;
+
+/* 辅色 */
+
+$sub-color:#ff8e32;
+
+/* 重要标题、段落文字 */
+
+$color-33:#333333;
+
+/* 普通段落文字、按钮边框线 */
+
+$color-80:#808080;
+
+/* 需要弱化的文字 */
+
+$color-b2:#b2b2b2;
+
+/* 1px分割线，白底商品描边、表单边框线 */
+
+$color-d9:#e5e5e5;
+
+/* 20px楼层分割，搜索框背景 */
+
+$color-f5:#f5f5f5;
+
+/* 导航栏、菜单栏背景色 */
+
+$color-fa:#fafafa;
+
+/*********** 字体 ************/
+
+/* 导航栏标题 */
+
+$fs-36:0.36rem;
+
+/* 分类导航标题，按钮文字、重要价格字号 */
+
+$fs-32:0.32rem;
+
+/* 标题文字、段落内容文字、按钮文字 */
+
+$fs-28:0.28rem;
+
+/* 需弱化的文字，或空间小内容多文字调整 */
+
+$fs-24:0.24rem;
+
+
+/*********** 间距 ************/
+
+/* 两个不同模块之间、模块较大时文字之间的间距 */
+
+$mg-40:0.4rem;
+
+/* 页面左右间距，同一模块内文字和图片的上下间距 */
+
+$mg-30:0.3rem;
+
+/* 模块较小时文字间、同一模块内文字图片左右间距 */
+
+$mg-20:0.2rem;
+
+/* 图片需连接紧密时间距、段落文字间距 */
+
+$mg-12:0.12rem;
+
+/*********** 圆角 ************/
+
+/* 近通屏的按钮圆角 */
+
+$radius-20:0.2rem;
+
+/* 大多按钮圆角 */
+
+$radius-10:0.1rem;
+
+/* 按钮较小圆角 */
+
+$radius-6:0.06rem;
+
+
+@define-extend page {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 1.0rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@define-extend bg {
+  background-position: 0 0;
+  background-size: contain;
+  background-repeat: no-repeat;
+}
+
+@define-extend flex-center{
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}

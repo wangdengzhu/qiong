@@ -6,16 +6,16 @@
 
 <script>
 export default {
-  props: ["title"],
-  data() {
-    return {};
+  props: ['title'],
+  data () {
+    return {}
   },
   methods: {
-      toDo(){
-          alert(111);
-      }
+    toDo () {
+      alert(111)
+    }
   }
-};
+}
 </script>
 <style scoped lang="scss">
 div {
