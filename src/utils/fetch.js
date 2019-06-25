@@ -6,23 +6,30 @@ import Vue from 'vue'
 import router from '@/router'
 import axios from 'axios'
 import { Indicator, Toast } from 'mint-ui'
-import storage from '@/utils/store'
 
 // API基础URL
-axios.defaults.baseURL = 'https://devapi.manjd.com/api/'
+axios.defaults.baseURL = 'http://webapi.hnjmnet.com/api/'
+// axios.defaults.baseURL = 'http://vin.free.idcfengye.com/api/'
 // 请求超时时间
-axios.defaults.timeout = 15000
+axios.defaults.timeout = 30000
+axios.defaults.withCredentials = true
 
 // 设置HTTP请求的拦截器
 axios.interceptors.request.use((config) => {
   // const { token, shopId, sharesource, openid } = store.state
-  const token = storage.get('token')
+  // const token = storage.get('token')
+  // http://47.110.155.113/api/auth/loginByPhone?phone=13648394014&nsukey=FGmyqyCuGpWYaxzawP%2Fh06LTQR2gMWF5%2BopgSQ7iHPy1UcXyXpLHPSXaRtfEkTV1sCrzGwaxfNfmx0oSqa4RI0ZDHsamz4%2F9RfLs4SHhpU%2B6%2FX4K3Vx6X8ILYqCpTgbI5xWAy4zHOnxT9PfUO7JUIkvX1DQ6ExgjZkdt79s9ubpixnA7kvbxt5GuoKTFcTpn
+  // const token = '7679ee4d-d459-48ff-a099-3b03c2af68ea'
+  // const token = '8659f802-b012-49eb-8094-8566c50c22b1'
+  const token = localStorage.getItem('token')
+  const openId = localStorage.getItem('openId')
+  // const openId = storage.get('openId')
   if (token) {
-    config.headers.token = token
+    config.headers['APP-Token'] = token
   }
-  // if (openid) {
-  //   config.headers.openid = openid
-  // }
+  if (openId) {
+    config.headers.openId = openId
+  }
   return config
 }, (error) => {
   return Promise.reject(error)

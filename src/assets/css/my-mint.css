@@ -19,3 +19,9 @@ $color-disabled: #DBDBDB; */
 .font-3 .mint-cell-title{
     width: 91px;
 }
+.mint-tabbar.is-fixed{
+    z-index: 100;
+}
+mt-tab-item img{
+    pointer-events: none;
+}

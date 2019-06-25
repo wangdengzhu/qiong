@@ -12,16 +12,17 @@
       </div>
       <div class="ht20"></div>
       <div class="order-main">
-        <img src="../../assets/images/touxiang2.jpg">
-        <div>一打百威（12瓶）</div>
+        <img :src="orderData.imageUrl">
+        <div>{{orderData.goodsName}}</div>
       </div>
       <div class="order-list">
-        <div>支付时间：{{+new Date()}}</div>
-        <div>支付金额：￥{{500}}</div>
-        <div>收货人：{{'你的小可爱'}}</div>
+        <div>支付时间：{{orderData.placeOrderTime}}</div>
+        <div>订单编号：{{orderId}}</div>
+        <div>支付金额：￥{{orderData.price}}</div>
+        <div style="padding-left: .7rem">收货人：{{orderData.orderUserName}}</div>
       </div>
       <div class="text-center">
-        <mt-button type="primary" size="small">提交</mt-button>
+        <mt-button type="primary" size="small" @click="submit">提交</mt-button>
       </div>
     </section>
     <bottom></bottom>
@@ -29,41 +30,90 @@
 </template>
 
 <script>
+import { getParams } from '@/utils/common'
 import bottom from '@/components/bottom'
 import uploader from '@/components/Upload'
+import { Indicator, Toast } from 'mint-ui'
 export default {
   components: {bottom, uploader},
   data () {
     return {
+      token: '',
+      orderData: [],
       reason: '',
+      orderId: 0,
       imgList: [] // 已上传的图片集合
     }
   },
   methods: {
+    submit () {
+      if (this.reason == '') {
+        Toast('请输入退款原因')
+        return
+      }
+      let obj = {
+        'APP-Token': this.token,
+        reason: this.reason,
+        payOrderId: this.orderData.payOrderId,
+        image: this.imageUrlList
+      }
+      let data = getParams(obj)
+      Indicator.open()
+      this.$get('/mch/refund/apply?' + data).then(res => {
+        Indicator.close()
+        Toast(res.msg)
+        if (res.ret === 0) {
+          setTimeout(() => {
+            this.$router.go(-1)
+          }, 3000)
+        }
+      })
+    },
     getImageList (files) {
       this.$nextTick(() => {
+        let imageData = new FormData()
         for (let i = 0, len = files.length; i < len; i++) {
           this.imgList.push(files[i].src.split('base64,')[1])
-          // 上传图片
-          //   this._getFileCode({
-          //     Base64Str: files[i].src.split("base64,")[1],
-          //     AttachmentType: this.$enums.AttachmentType.Activity
-          //   });
+          imageData.append('file', files[i].file)
         }
+        let token = localStorage.getItem('token')
+        // 上传图片
+        Indicator.open('上传中')
+        this.$post('/file/uploadImage?APP-Token=' + token, imageData).then(res => {
+          Indicator.close()
+          if (res.ret === 0) {
+            this.imageUrlList = res.data.map(item => {
+              return item.url
+            })
+          }
+        })
       })
     },
     // 删除图片
     removeImage (index) {
       this.imgList.splice(index, 1)
+      this.imageUrlList.splice(index, 1)
     },
     toMyGift () {
       this.$router.push({
         path: '/mygift'
       })
+    },
+    init () {
+      this.token = localStorage.getItem('token')
+      this.orderId = this.$route.query.orderId
+      Indicator.open()
+      this.$get('/mch/order/detail', {orderId: this.orderId, 'APP-Token': this.token}).then(res => {
+        Indicator.close()
+        if (res.ret === 0) {
+          this.orderData = res.data
+          this.status = res.data.status
+        }
+      })
     }
   },
-  created () {
-
+  mounted () {
+    this.init()
   }
 }
 </script>

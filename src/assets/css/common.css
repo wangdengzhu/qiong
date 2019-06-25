@@ -319,3 +319,9 @@ img[lazy=loaded],img.swiper-lazy-loaded{
     height: .2rem;
     background: #f0f0f0;
 }
+.empty{
+    width: 100%;
+    text-align: center;
+    font-size: .3rem;
+    line-height: .8rem;
+}

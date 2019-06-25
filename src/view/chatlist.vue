@@ -1,37 +1,41 @@
 <template>
-  <div class="chatlist-wrap" @click="showGreet = !1">
-    <moveleft></moveleft>
+  <div class="chatlist-wrap">
+    <moveleft :list="list"></moveleft>
     <bottom></bottom>
   </div>
 </template>
 
 <script>
-import bottom from "@/components/bottom";
-import moveleft from "@/components/moveleft";
-import { MessageBox } from 'mint-ui';
+import bottom from '@/components/bottom'
+import moveleft from '@/components/moveleft'
+import { Indicator, Toast } from 'mint-ui'
 export default {
-  components: { bottom, moveleft},
-  data() {
+  components: { bottom, moveleft },
+  data () {
     return {
-      startX: 0,
-      startY: 0,
-      endX: 0,
-      endY: 0,
-      swipeX: false,
-      swipeY: false,
-      expansion: false
-    };
-  },
-  methods: {
-    toChat() {
-      this.$router.push({
-        path: "/chat"
-      });
+      list: []
     }
   },
-  created() {
+  methods: {
+    init () {
+      Indicator.open()
+      let token = localStorage.getItem('token')
+      this.$get('/userMessage/chatList', {
+        'APP-Token': token,
+        pageNum: 1,
+        pageSize: 30
+      }).then(res => {
+        Indicator.close()
+        if (res.ret === 0) {
+          this.list = res.data.records
+        }
+      })
+    }
+  },
+  mounted () {
+    this.init()
   }
-};
+}
 </script>
 <style lang="scss">
 .chatlist-wrap {

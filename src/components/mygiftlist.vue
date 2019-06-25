@@ -1,31 +1,35 @@
 <template>
   <div class="container">
-    <div class="page-title">搭讪宝</div>
-    <ul v-if="list.length>0">
+    <ul>
       <li class="list-item " v-for="(item,index) in list " data-type="0" :key="index">
-        <div class="list-box" @touchstart.capture="touchStart" @touchend.capture="touchEnd" @click="skip(item.reveiverUser, item.nickname)">
-          <img class="list-img" :src="item.avatar" alt="">
-          <div class="list-content">
-            <p class="title">{{item.nickname}}</p>
-            <p v-if="item.msgType == 0" class="tips">{{item.msgContent}}</p>
-            <p v-if="item.msgType == 1" class="tips">图片</p>
-            <p v-if="item.msgType == 6" class="tips">礼物</p>
-            <p class="time">{{item.sendTime}}</p>
+        <div @touchstart.capture="touchStart" @touchend.capture="touchEnd" @click="skip(item.orderId)">
+          <div class="list">
+            <div class="sugest">
+              <div>
+                <img v-if="type == 1" @click="goChat($event,item)" :src="item.avatar" alt="">
+                <span>{{item.giveTime}}</span>
+              </div>
+              <div>
+                <span>{{type == 1 ? '收到' : '送出'}}</span>
+                <img class="list-img" :src="item.giftImg" alt="">
+              </div>
+            </div>
           </div>
         </div>
-        <div class="delete" @click="deleteItem" :data-index="index" :data-id="item.reveiverUser">删除</div>
+        <div class="delete" @click="deleteItem" :data-index="index">删除</div>
       </li>
     </ul>
-    <div v-else class="empty">没有记录</div>
   </div>
 </template>
 
 <script>
-import { Indicator, Toast } from 'mint-ui'
 export default {
   props: {
     list: {
       type: Array,
+      required: true
+    },
+    type: {
       required: true
     }
   },
@@ -36,18 +40,29 @@ export default {
     }
   },
   methods: {
+    goChat (e, data) {
+      e.stopPropagation()
+      this.$router.push({
+        path: '/chat',
+        query: {
+          id: data.giverId,
+          nickname: data.nickName
+        }
+      })
+    },
     // 跳转
-    skip (reveiverUser, nickname) {
+    skip (orderId) {
       if (this.checkSlide()) {
         this.restSlide()
       } else {
-        this.$router.push({
-          path: '/chat',
-          query: {
-            id: reveiverUser,
-            nickname
-          }
-        })
+        if (this.type == 2) {
+          this.$router.push({
+            path: '/order/orderdetail',
+            query: {
+              orderId
+            }
+          })
+        }
       }
     },
     // 滑动开始
@@ -94,20 +109,12 @@ export default {
     },
     // 删除
     deleteItem (e) {
-      let token = localStorage.getItem('token')
       // 当前索引
       let index = e.currentTarget.dataset.index
-      const data = { reveiver: e.currentTarget.dataset.id, 'APP-Token': token}
-      Indicator.open()
-      this.$get('/userMessage/delete', data).then(res => {
-        Indicator.close()
-        if (res.ret === 0) {
-          // 复位
-          this.restSlide()
-          // 删除
-          this.list.splice(index, 1)
-        }
-      })
+      // 复位
+      this.restSlide()
+      // 删除
+      this.list.splice(index, 1)
     }
   }
 }
@@ -115,27 +122,6 @@ export default {
 <style scoped lang="scss">
 .container{
   padding-bottom: 80px;
-}
-.page-title{
-  text-align: center;
-  font-size: 17px;
-  padding: 10px 15px;
-  position: relative;
-}
-.page-title:after{
-  content: " ";
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  right: 0;
-  height: 1px;
-  border-bottom: 1px solid #ccc;
-  color: #ccc;
-  -webkit-transform-origin: 0 100%;
-  transform-origin: 0 100%;
-  -webkit-transform: scaleY(0.5);
-  transform: scaleY(0.5);
-  z-index: 2;
 }
 .list-item{
   position: relative;
@@ -156,33 +142,18 @@ export default {
   bottom: 0;
   right: 0;
   height: 1px;
-  border-bottom: 1px solid #ccc;
-  color: #ccc;
+  border-bottom: 1px solid #ddd;
+  color: #ddd;
   -webkit-transform-origin: 0 100%;
   transform-origin: 0 100%;
   -webkit-transform: scaleY(0.5);
   transform: scaleY(0.5);
   z-index: 2;
 }
-.list-box{
-  padding: 0.2rem;
-  background: #fff;
-  display: flex;
-  align-items: center;
-  -webkit-box-sizing: border-box;
-  box-sizing: border-box;
-  justify-content: flex-end;
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  font-size: 0;
-}
+
 .list-item .list-img{
-  display: block;
-  width: 1rem;
-  height: 1rem;
+  width: .8rem;
+  height: .8rem;
 }
 .list-item .list-content{
   padding: 0.1rem 0 0.1rem 0.2rem;
@@ -230,5 +201,25 @@ export default {
   position: absolute;
   top:0;
   right: -2rem;
+}
+.list{
+  margin: 0 .2rem;
+  padding: .4rem .2rem .4rem 0;
+  background-size: .32rem .52rem;
+  .font32{
+    margin-bottom: .1rem;
+    font-size: .32rem;
+  }
+  .sugest{
+    display: flex;
+    justify-content: space-between;
+    div{
+      line-height: .8rem;
+      img{
+        height: .8rem;
+        vertical-align: middle;
+      }
+    }
+  }
 }
 </style>

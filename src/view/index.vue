@@ -1,48 +1,29 @@
 <template>
 <div class="page-wrap">
   <div class="index-wrapper">
+    <div class="title">{{barInfo.bar && barInfo.bar.name}}</div>
     <div class="section">
-      <div class="section-title">查询台号</div>
+      <div class="section-title">想找的人在几号台？</div>
       <select @change="selectFn" class="select">
-        <option value="请选择" selected disabled>请选择</option>
-        <option v-for="(item,i) in barData" :value="item.name" :key="i">{{item.name}}</option>
+        <option value="" selected disabled>选择台号</option>
+        <option v-for="(item,i) in tabNumList" :value="item" :key="i">{{item}}</option>
       </select>
       <div class="init-state">
-        <span>{{ selected || '请选择'}}</span>
+        <span>{{ selected || '选择台号'}}</span>
         <div></div>
       </div>
     </div>
     <div class="bar-wrap">
       <div class="bar-box">
-        <div class="bar-list" @click="naToCounter">
-          <div class="bar-center"><span>A01</span></div>
+        <div class="bar-list" @click="naToCounter(item)" v-for="(item, i) in barData" :key="i">
+          <div class="bar-center"><span>{{item.tabNum}}</span><p>...</p></div>
           <div class="img-box">
-            <img src="../assets/images/touxiang1.jpg" >
-            <img src="../assets/images/touxiang2.jpg" >
-            <img src="../assets/images/touxiang3.jpg" >
-            <img src="../assets/images/touxiang4.jpg" >
-            <img src="../assets/images/touxiang5.jpg" >
-            <img src="../assets/images/touxiang1.jpg" >
-            <img src="../assets/images/touxiang2.jpg" >
-            <img src="../assets/images/touxiang3.jpg" >
-          </div>
-        </div>
-        <div class="bar-list" @click="naToCounter">
-          <div class="bar-center"><span>A02</span></div>
-          <div class="img-box">
-            <img src="../assets/images/touxiang1.jpg" >
-            <img src="../assets/images/touxiang2.jpg" >
-            <img src="../assets/images/touxiang3.jpg" >
-            <img src="../assets/images/touxiang4.jpg" >
-            <img src="../assets/images/touxiang5.jpg" >
-            <img src="../assets/images/touxiang1.jpg" >
-            <img src="../assets/images/touxiang2.jpg" >
-            <img src="../assets/images/touxiang3.jpg" >
+            <img :src="v.avatar" v-for="(v, n) in item.users" :key="n">
           </div>
         </div>
       </div>
     </div>
-    <div id="snowzone">
+    <div class="snowzone">
       <div class="div" v-for="(n, i) in 10" :key="i" :style="styleArr[i]">
         <img class="roll" :class="'roll-' + i" src="../assets/images/love-1.png" >
       </div>
@@ -57,33 +38,61 @@
 
 <script>
 import bottom from '@/components/bottom'
+import store from '@/store/'
+import { mapState, mapMutations } from 'vuex'
+import { Indicator, Toast } from 'mint-ui'
+
 export default {
   components: {bottom},
   data () {
     return {
       selected: '',
-      selectedId: '',
-      barData: [
-        { id: 1, name: '黎明' },
-        { id: 2, name: '天黑' },
-        { id: 3, name: '须有' }
-      ],
-      styleArr: []
+      barData: [],
+      tabNumList: [],
+      styleArr: [],
+      token: ''
     }
   },
   methods: {
+    ...mapMutations(['SAVE_USERINFO', 'SAVE_BARINFO']),
     selectFn (e) {
       this.selected = e.target.value
-      this.selectedId = this.barData[e.target.selectedIndex - 1].id
+      Indicator.open()
+      this.$get('/mch/tab/all', {tabNum: this.selected, 'APP-Token': this.token}).then(res => {
+        Indicator.close()
+        if (res.ret === 0) {
+          this.barData = res.data.records
+        }
+      })
     },
-    naToCounter () {
+    naToCounter (item) {
+      if (item.users.length <= 0) {
+        Toast('该吧台没人入座')
+        return
+      }
+      const {tabNum, mchId} = item
       this.$router.push({
-        path: '/index/counterinfo'
+        path: '/counterinfo',
+        query: {
+          tabNum,
+          mchId
+        }
+      })
+    },
+    getUser () {
+      // 获取本人用户信息
+      this.$get('/user/myInfo', {'APP-Token': this.token}).then(res => {
+        if (res.ret === 0) {
+          store.commit('SAVE_USERINFO', res.data.baseInfo)
+          store.commit('SAVE_COUNTINFO', res.data.account)
+        }
       })
     }
   },
-  beforeCreate () {
-    document.title = '酒吧'
+  computed: {
+    ...mapState({
+      barInfo: state => state.user.barInfo
+    })
   },
   mounted () {
     for (let i = 0; i < 10; i++) {
@@ -92,6 +101,29 @@ export default {
         height: Math.random() * (window.innerHeight + 1 - 200) + 200 + 'px'
       })
     }
+    Indicator.open()
+    // 获取吧台信息，入座人信息
+    this.$get('/mch/tab/all').then(res => {
+      Indicator.close()
+      if (res.ret === 0) {
+        this.barData = res.data.records
+        this.barData.map(item => {
+          this.tabNumList.push(item.tabNum)
+        })
+      }
+    })
+    // 获取酒吧信息
+    this.$get('/mch/current').then(res => {
+      Indicator.close()
+      if (res.ret === 0) {
+        localStorage.setItem('token', res.data.token)
+        this.token = res.data.token
+        store.commit('SAVE_BARINFO', res.data)
+        this.getUser()
+      } else {
+        store.commit('SAVE_BARINFO', {})
+      }
+    })
   }
 }
 </script>
@@ -115,8 +147,13 @@ export default {
   bottom: 0;
   right: 0;
   z-index: 1000;
-  background-image: radial-gradient(circle at center top,#f38aee,#00b8ff);
-  background-size: cover;
+  overflow: auto;
+  background: #cc6172;
+}
+.title{
+  text-align: center;
+  line-height: .8rem;
+  border-bottom: 1px solid #fff;
 }
 .section {
   padding: 0 .32rem;
@@ -154,7 +191,7 @@ export default {
       div {
       width: 0.14rem;
       height: 0.24rem;
-      background-image: url(../assets/images/right-icon.png);
+      background-image: url(../assets/images/list-icon.png);
       background-size: 100%;
       margin-left: 0.16rem;
     }
@@ -162,31 +199,36 @@ export default {
 }
 
 .bar-box{
-  padding: .4rem .2rem;
+  padding: .4rem;
+  padding-bottom: 1rem;
   display: flex;
   justify-content: space-between;
   flex-wrap: wrap;
   .bar-list{
     width: 3rem;
     height: 3rem;
+    margin-bottom: .6rem;
     position: relative;
     z-index: 100;
     .bar-center{
       width: 1rem;
       height: 1rem;
-      border: 1px solid #ddd;
       border-radius: .5rem;
       position: absolute;
       left: 50%;
       top: 50%;
       z-index: 10000;
       margin-left: -.5rem;
-      margin-top: -.5rem;
+      margin-top: -.7rem;
       font-size: .3rem;
       text-align: center;
+      color: #fff;
       span{
         margin-top: .35rem;
         display: block;
+      }
+      p{
+        font-size: .4rem;
       }
     }
     .img-box{
@@ -242,7 +284,7 @@ export default {
   transform: translate3d(100%,0,0);
 }
 
-#snowzone{
+.snowzone{
   position: absolute;
   top: 0;
   left: 0;

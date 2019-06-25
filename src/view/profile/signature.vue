@@ -1,10 +1,10 @@
 <template>
     <div class="text-wrapper">
-      <mt-header title="昵称">
+      <mt-header title="设置个性签名">
         <mt-button @click="$router.go(-1)" slot="left">取消</mt-button>
         <mt-button @click="saveText" class="btn-sure" :class="sure ? 'sure' : ''" slot="right">完成</mt-button>
       </mt-header>
-      <mt-field :attr="{ maxlength: 10 }" label="" placeholder="请输入昵称" v-model="text"></mt-field>
+      <mt-field :attr="{ maxlength: 30 }" label="" type="textarea" rows="3" placeholder="请输入内容" v-model="text"></mt-field>
     </div>
 </template>
 
@@ -35,11 +35,11 @@ export default {
       }
       Indicator.open('保存中...')
       let token = localStorage.getItem('token')
-      this.$post('/user/modify?APP-Token='+token, {nickname: this.text}).then(res => {
+      this.$post('/user/modify?APP-Token=' + token, {introduction: this.text}).then(res => {
         Indicator.close()
         Toast(res.msg)
         if (res.ret === 0) {
-          this.$store.commit('SAVE_USERINFO', Object.assign({},this.userInfo,{nickname: this.text}))
+          this.$store.commit('SAVE_USERINFO', Object.assign({}, this.userInfo, {introduction: this.text}))
           setTimeout(() => {
             this.$router.go(-1)
           }, 3000)

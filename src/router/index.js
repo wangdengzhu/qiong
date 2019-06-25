@@ -1,32 +1,36 @@
 import Vue from 'vue'
 import Router from 'vue-router'
-
 Vue.use(Router)
 
 const router = new Router({
   routes: [{
+    path: '/start',
+    name: '中转页面',
+    component: () => import('@/view/start'),
+    meta: {
+      title: ''
+    }
+  }, {
     path: '/index',
-    name: 'Index',
+    name: '大厅',
     component: () => import('@/view/index'),
     meta: {
       title: '',
       keepAlive: !0
-    },
-    children: [{
-      path: 'counterinfo',
-      name: '吧台信息',
-      component: () => import('@/view/children/counterinfo'),
-      meta: {
-        title: ''
-      }
-    }]
+    }
   }, {
-    path: '/',
-    name: 'Introduce',
+    path: '/introduce',
+    name: '介绍',
     component: () => import('@/view/introduce'),
     meta: {
-      title: '介绍',
-      keepAlive: !0
+      title: ''
+    }
+  }, {
+    path: '/counterinfo',
+    name: 'counterinfo',
+    component: () => import('@/view/counterinfo'),
+    meta: {
+      title: '吧台信息'
     }
   }, {
     path: '/user',
@@ -52,7 +56,7 @@ const router = new Router({
     }
   }, {
     path: '/chatlist',
-    name: '聊天列表',
+    name: '消息列表',
     component: () => import('@/view/chatlist'),
     meta: {
       title: '消息'
@@ -65,27 +69,45 @@ const router = new Router({
       title: ''
     }
   }, {
+    path: '/message',
+    name: '留言板',
+    component: () => import('@/view/message'),
+    meta: {
+      title: ''
+    }
+  }, {
     path: '/profile/profile',
-    name: '个人中心',
+    name: '我的',
     component: () => import('@/view/profile/profile'),
     meta: {
       title: '个人中心'
-    }
-  }, {
-    path: '/profile/setting',
-    name: '修改个人信息',
-    component: () => import('@/view/profile/setting'),
-    meta: {
-      title: '修改个人信息'
     },
-    children: [{
-      path: '/profile/username',
-      name: '修改昵称',
-      component: () => import('@/view/profile/username'),
-      meta: {
-        title: ''
+    children: [
+      {
+        path: '/profile/username',
+        name: '修改昵称',
+        component: () => import('@/view/profile/username'),
+        meta: {
+          title: ''
+        }
+      },
+      {
+        path: '/profile/signature',
+        name: '修改个性签名',
+        component: () => import('@/view/profile/signature'),
+        meta: {
+          title: ''
+        }
+      },
+      {
+        path: '/profile/hobby',
+        name: '修改个人标签',
+        component: () => import('@/view/profile/hobby'),
+        meta: {
+          title: '修改个人标签'
+        }
       }
-    }]
+    ]
   }, {
     path: '/mygift',
     name: '我的礼物',
@@ -123,7 +145,33 @@ const router = new Router({
     }
   }],
   mode: 'history'
+  // base: '/'
 })
+
+// router.beforeEach((to, from, next) => {
+//   /* 路由发生变化修改页面title */
+//   document.title = to.meta.title
+//   // 第一次访问
+//   const token = window.localStorage.getItem('token')
+// debugger
+//   if (!token && to.path !== '/') {
+//     // 保存用户进入的url
+//     console.log(to.fullPath)
+//     window.localStorage.setItem('beforeLoginUrl', to.fullPath)
+//     next('/')
+//   } else if (token && !store.getters.userInfo) {
+//     // 拉取用户信息
+//     store.dispatch('getUserInfo').catch(err => {
+//       console.log(err)
+//       window.localStorage.removeItem('token')
+//       router.go(0)
+//     })
+//     next()
+//   } else {
+//     // 已经登录
+//     next()
+//   }
+// })
 
 router.afterEach((to, from) => {
   if (to.meta && to.meta.title) {

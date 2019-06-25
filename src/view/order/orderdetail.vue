@@ -1,21 +1,22 @@
 <template>
   <div class="order-wrap">
     <section class="order-con">
-      <div class="order-top">
-        <div>夜王酒吧-订单详情</div>
-        <div class="con-right">等待商家退款中</div>
-      </div>
+      <mt-header :title="barInfo.bar && barInfo.bar.name+'-订单详情'">
+        <mt-button @click="$router.go(-1)" icon="back" slot="left"></mt-button>
+      </mt-header>
+      <div class="order-top">{{statusDec[status]}}</div>
       <div class="order-main">
-        <img src="../../assets/images/touxiang2.jpg">
-        <div>一打百威（12瓶）</div>
+        <img :src="orderData.imageUrl">
+        <div>{{orderData.goodsName}}</div>
       </div>
       <div class="order-list">
-        <div>支付时间：{{+new Date()}}</div>
-        <div>支付金额：￥{{500}}</div>
-        <div>收货人：{{'你的小可爱'}}</div>
+        <div>支付时间：{{orderData.placeOrderTime}}</div>
+        <div>订单编号：{{orderId}}</div>
+        <div>支付金额：￥{{orderData.price}}</div>
+        <div style="padding-left: .7rem">收货人：{{orderData.orderUserName}}</div>
       </div>
       <div class="fr">
-        <mt-button @click="toRefund" type="primary" size="small">退款</mt-button>
+        <mt-button v-if="status == 0 || status == 1" @click="toRefund" type="primary" size="small">退款</mt-button>
       </div>
     </section>
     <bottom></bottom>
@@ -24,22 +25,52 @@
 
 <script>
 import bottom from '@/components/bottom'
+import { Indicator, Toast } from 'mint-ui'
+import { mapState, mapMutations } from 'vuex'
 export default {
   components: {bottom},
   data () {
     return {
-
+      orderId: 0,
+      status: 0, // 订单状态：0-下单，1-接单，2-取消，3-完成，4-退款申请,5-拒绝退款，6-退款完成
+      statusDec: [
+        '您已经下单成功',
+        '商家已经接单',
+        '您的订单已取消',
+        '您的订单已完成',
+        '等待商家退款中',
+        '商家拒绝退款',
+        '退款完成'
+      ],
+      orderData: {}
     }
+  },
+  computed: {
+    ...mapState({
+      barInfo: state => state.user.barInfo
+    })
   },
   methods: {
     toRefund () {
       this.$router.push({
         path: 'refund'
       })
+    },
+    init () {
+      this.orderId = this.$route.query.orderId
+      Indicator.open()
+      let token = localStorage.getItem('token')
+      this.$get('/mch/order/detail', {orderId: this.orderId,'APP-Token': token}).then(res => {
+        Indicator.close()
+        if (res.ret === 0) {
+          this.orderData = res.data
+          this.status = res.data.status
+        }
+      })
     }
   },
-  created () {
-
+  mounted () {
+    this.init()
   }
 }
 </script>
@@ -57,19 +88,13 @@ export default {
   font-size: .3rem;
 }
 .order-top{
-  display: flex;
-  justify-content: space-between;
   margin-bottom: .2rem;
   padding: .3rem .4rem;
   background: #fff;
   color: #333;
   font-size: .32rem;
   font-weight: 600;
-  .con-right{
-    font-size: .28rem;
-    font-weight: normal;
-    color: #666;
-  }
+  text-align: center;
 }
 .order-main{
   display: flex;

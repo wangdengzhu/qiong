@@ -1,8 +1,15 @@
 <template>
   <div class="cash-wrap">
     <section class="cash-con">
-      <div class="cash-top">提现金额将存入微信钱包</div>
-      <div class="cash-amount">可提现金额： ￥200</div>
+      <mt-header title="提现">
+        <div @click="$router.go(-1)" slot="left">
+          <mt-button>取消</mt-button>
+        </div>
+      </mt-header>
+      <div class="cash-top">
+        <div class="cash-amount">提现金额：</div>
+        <div class="cash-amount">￥{{countInfo ? countInfo.balance : 0}}</div>
+      </div>
       <div class="tips">只能全部提现</div>
       <div class="btn">
         <mt-button size="large" type="primary" @click.native.stop="cash">提现</mt-button>
@@ -15,7 +22,7 @@
 <script>
 import bottom from '@/components/bottom'
 import { Indicator, Toast } from 'mint-ui'
-import { setTimeout } from 'timers'
+import { mapState, mapMutations } from 'vuex'
 export default {
   components: {bottom},
   data () {
@@ -23,22 +30,34 @@ export default {
 
     }
   },
+  computed: {
+    ...mapState({
+      countInfo: state => state.user.countInfo
+    })
+  },
   methods: {
     cash () {
-      Toast('提现成功')
-      setTimeout(() => {
-        this.$router.push({
-          path: 'mygift'
-        })
-      }, 2000)
-    },
-    toRefund () {
-      this.$router.push({
-        path: 'refund'
+      if (!this.countInfo || this.countInfo.balance == 0) {
+        Toast('提现金额为0')
+      }
+      Indicator.open()
+      let token = localStorage.getItem('token')
+      this.$get(`/withdraw`, {'APP-Token': token}).then(res => {
+        Indicator.close()
+        if (res.ret === 0) {
+          Toast('提现成功')
+          setTimeout(() => {
+            this.$router.push({
+              path: 'mygift'
+            })
+          }, 2000)
+        } else {
+          Toast(res.msg)
+        }
       })
     }
   },
-  created () {
+  mounted () {
 
   }
 }
@@ -56,8 +75,9 @@ export default {
   z-index: 1;
   font-size: .3rem;
   .cash-top{
-    margin-bottom: .2rem;
     padding: .3rem .4rem;
+    display: flex;
+    justify-content: space-between;
   }
   .cash-amount{
     margin-bottom: .2rem;
@@ -72,7 +92,7 @@ export default {
     font-size: .28rem;
   }
   .btn{
-    width: 3rem;
+    width: 2rem;
     margin: 0 auto;
   }
 }

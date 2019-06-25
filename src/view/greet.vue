@@ -1,17 +1,17 @@
 <template>
   <div class="counter-wrap">
-    <mt-header title="收到的招呼">
-      <router-link to="/userinfo" slot="left">
-        <mt-button>返回</mt-button>
-      </router-link>
+    <mt-header :title="this.typeText + '的礼物'">
+      <div @click="$router.go(-1)" slot="left">
+        <mt-button icon="back"></mt-button>
+      </div>
     </mt-header>
     <section class="greet-wrap">
       <ul>
-        <li class="list" v-for="(item,i) in 12" :key="i">
-          <div class="list-left">2019年5月9日 21:50</div>
+        <li class="list" v-for="(item,i) in greetList" :key="i">
+          <div class="list-left">{{item.placeOrderTime}}</div>
           <div class="list-right">
-            <span>送出</span>
-            <img src="../assets/images/love-icon.png" alt="">
+            <span>{{typeText}}</span>
+            <img :src="item.imageUrl" alt="">
           </div>
         </li>
       </ul>
@@ -20,17 +20,37 @@
 </template>
 
 <script>
-import IM from '@/utils/im'
+import { Indicator, Toast } from 'mint-ui'
 export default {
   data () {
     return {
-      im: null
+      type: 1,
+      typeText: '',
+      greetList: []
     }
   },
   methods: {
-    
+    init () {
+      let token = localStorage.getItem('token')
+      const data = {
+        'APP-Token': token,
+        type: this.type == 1 ? 'other' : 'my',
+        viewUserId: this.$route.query.id,
+        direction: this.type == 1 ? 'from' : 'to'
+      }
+      Indicator.open()
+      this.$get('/user/greeting', data).then(res => {
+        Indicator.close()
+        if (res.ret === 0) {
+          this.greetList = res.data.records
+        }
+      })
+    }
   },
   mounted () {
+    this.type = this.$route.query.type // 1: 收到； 2: 送出
+    this.typeText = this.$route.query.type == 1 ? '收到' : '送出'
+    this.init()
   }
 }
 </script>

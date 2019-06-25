@@ -21,9 +21,11 @@
     "vue": "^2.5.2",
     "vue-cropper": "^0.4.9",
     "vue-router": "^3.0.1",
+    "vuex": "^3.1.1",
     "weixin-js-sdk": "^1.4.0-test"
   },
   "devDependencies": {
+    "animate.css": "^3.7.2",
     "autoprefixer": "^7.1.2",
     "babel-core": "^6.22.1",
     "babel-eslint": "^8.2.1",
@@ -78,6 +80,7 @@
     "uglifyjs-webpack-plugin": "^1.1.1",
     "url-loader": "^0.5.8",
     "vue-jest": "^1.0.2",
+    "vue-jsonp": "^0.1.8",
     "vue-loader": "^13.3.0",
     "vue-style-loader": "^3.0.1",
     "vue-template-compiler": "^2.5.2",

@@ -1,9 +1,9 @@
 <template>
 <div class="chat-wrap">
-  <mt-header :title="title">
-    <div @click="$router.go(-1)" slot="left">
+  <mt-header :title="barInfo.bar && barInfo.bar.name+'留言板'">
+    <router-link to="/index" slot="left">
       <mt-button icon="back"></mt-button>
-    </div>
+    </router-link>
   </mt-header>
   <div class="chat-container"  @click="hideFooter">
     <div class="chat-list " ref="chatList" :class="{ history: historyMessage.length > 0 }">
@@ -23,10 +23,6 @@
               <div v-else-if="message.msgType==msgType.IMG" class="ml__pic" @click="showPreview(message)">
                 <img :src="message.content">
               </div>
-              <div class="ml__pic pic_order" v-else-if="message.msgType==msgType.ORDER">
-                <img :src="message.content ? JSON.parse(message.content).image : ''">
-                <span v-if="message.content && JSON.parse(message.content).giftPrice>0 && message.from != from" @click="toMyGift">进入“我的礼物”查看</span>
-              </div>
             </div>
           </li>
         </ul>
@@ -40,15 +36,11 @@
               </div>
               <div class="ml__cnt">
                 <div class="ml__cnt-box">
-                  <img @click="navToInfo(message)" :src="[message.from == from ? myAvatar : message.extras.avatar]" class="ml__avatar">
+                  <img @click="navToInfo(message)" :src="[ message.from == from ? myAvatar : message.extras.avatar]" class="ml__avatar">
                   <span v-if="message.msgType==msgType.TEXT" class="ml__txt" v-html="emotionParse(message.content)"></span>
                   <div v-else-if="message.msgType==msgType.IMG" class="ml__pic" @click="showPreview(message)">
                     <img :src="message.content">
                     <!-- <i v-if="message.isLoading && !message.isFail" class="icon-msg-loading"></i> -->
-                  </div>
-                  <div class="ml__pic pic_order" v-else-if="message.msgType==msgType.ORDER">
-                    <img :src="message.content.image">
-                    <span v-if="message.content.giftPrice>0 && message.from != from" @click="toMyGift">进入“我的礼物”查看</span>
                   </div>
                   <div @click="reSendMsg(message)" v-if="message.isFail" class="icon-msg-fail"></div>
                 </div>
@@ -57,16 +49,6 @@
           </li>
         </ul>
       </div>
-    </div>
-  </div>
-  <div class="chat-middle">
-    <div @click="showFooter(3)">
-      <img src="../assets/images/gift-icon-color.png">
-      <span>表示一下</span>
-    </div>
-    <div @click="showFooter(4)">
-      <img src="../assets/images/beer-icon.png">
-      <span>请TA喝酒</span>
     </div>
   </div>
   <div class="chat-footer">
@@ -107,24 +89,6 @@
           </li>
         </ul>
       </div>
-      <!-- 表示一下 -->
-      <div class="cf__menu" v-show="showType == 3">
-        <ul class="menu__box gift-box">
-          <li @click="sendDrink(2, item)" class="menu__item" v-for="(item, n) in giftList" :key="n">
-            <img :src="item.image">
-            <span class="txt">{{item.giftName}}</span>
-          </li>
-        </ul>
-      </div>
-      <!-- 请TA喝酒 -->
-      <div class="cf__menu" v-show="showType == 4">
-        <ul class="menu__box gift-box">
-          <li @click="sendDrink(3, item)" class="menu__item" v-for="(item, n) in beerList" :key="n">
-            <img :src="item.image">
-            <span class="txt">{{item.name}}</span>
-          </li>
-        </ul>
-      </div>
     </div>
   </div>
   <div class="preview" v-show="isShow" @click="hidePreview">
@@ -138,7 +102,6 @@
 </template>
 
 <script>
-
 import IM from '@/utils/im'
 import bottom from '@/components/bottom'
 import Swiper from 'swiper/dist/js/swiper.min'
@@ -148,7 +111,7 @@ import 'swiper/dist/css/swiper.min.css'
 import EXIF from 'exif-js'
 import { compressImg, dataURLtoBlob } from '@/utils/imageManage'
 import { mapState, mapMutations } from 'vuex'
-
+import store from '@/store/'
 const MAX_IMG_SIZE = 10 * 1024 * 1024 // 10MB
 const NO_COMPRESS_SIZE = 0.2 * 1024 * 1024 // 200KB， 如果小于200KB，直接上传不压缩
 export default {
@@ -157,7 +120,6 @@ export default {
     return {
       myNickName: '', // 我的昵称
       myAvatar: '', // 我的头像
-      title: '', // 对方昵称
       workStatus: 1, // 客服状态：1 客服在线 101 客服离线；102 客服正忙; 103 服务器正在开小差;
       inWorkTime: !0, // 是否在客服工作时间
       csWorkTime: '',
@@ -168,8 +130,9 @@ export default {
       messageTxt: '',
       messageList: [],
       messageIdArr: [],
+      groupId: '', // 群组ID
+      groupUsers: [], // 群组用户
       from: '',
-      toId: '',
       sessionIsEnd: !1,
 
       emotion: emotion,
@@ -205,22 +168,17 @@ export default {
       isIMlogined: !1,
       isIMCreatedChat: !1,
 
-      checkLoginTimer: null
+      checkLoginTimer: null,
+      isConnectedTimer: null
     }
   },
   computed: {
     ...mapState({
-      userInfo: state => state.user.userInfo,
-      barInfo: state => state.user.barInfo
+      barInfo: state => state.user.barInfo,
+      userInfo: state => state.user.userInfo
     })
   },
   methods: {
-    ...mapMutations(['SAVE_USERINFO']),
-    toMyGift () {
-      this.$router.push({
-        path: '/mygift'
-      })
-    },
     navToInfo (message) {
       if (message.from == this.from) {
         return
@@ -259,42 +217,58 @@ export default {
       console.log('opened...' + new Date())
       // this.im.login()
     },
-    /**
-     * 接收消息
-     * @param data
-     */
     messageHandler (data) {
       const obj = data && data.data
-      // this.from = 1002
       // this.startCheckLogin() // 心跳机制
       if (data.command == 6) {
         console.log('登录成功')
       }
-      if (data.command == 11) {
+      if (data.command == 11) { // 接收到聊天响应处理
         if (obj.from == this.from) {
           return
         }
-        if (obj.from != this.im.to) {
-          return
-        }
-        // if (!this.isIMCreatedChat) {
-        //   return
-        // }
         this.receivedTrueMessage(obj)
+      } else if (data.command == 9) { // 加入群组的消息通知处理
+        let joinGroupNotify = data.data
+        console.info('加入群聊通知：' + joinGroupNotify.user.nick + '(' + joinGroupNotify.user.id + ')加入群聊.')
+        let onlineUserCmd = '{"cmd":17,"type":"0","userid":"' + this.userInfo.id + '"}'
+        // socket.send(onlineUserCmd);//获取在线用户列表;
+        this.im.ws.send(onlineUserCmd)
+      } else if (data.command == 10) { // 退出群组的消息通知处理
+        let exitGroupNotify = data.data
+        console.info('加入群聊通知：' + exitGroupNotify.user.nick + '(' + exitGroupNotify.user.id + ')退出群聊.')
+        let onlineUserCmd = '{"cmd":17,"type":"0","userid":"' + this.userInfo.id + '"}'
+        this.im.ws.send(onlineUserCmd)
+      } else if (data.command == 18) { // 获取用户信息响应处理
+        let curUser = data.data
+        var groups = curUser.groups
+        this.groupUsers = groups
+        console.info('加入群组用户：' + JSON.stringify(groups))
       }
     },
     async receivedTrueMessage (data) {
       if (this.messageIdArr.includes(data.id)) {
         return
       }
-      // if (data && data.senderInfo && !data.senderInfo.photo) {
-      //   data.senderInfo.photo = im_service_avatar
-      // }
-
       if (data && data.msgType == 1) { // 图片
         await this.dealIMGMessage(data)
       }
-
+      // 从在线用户获取响应用户头像
+      let onlineUsers = this.groupUsers.users
+      let avatar = null
+      for (var i = 0; i < onlineUsers.length; i++) {
+        var u = onlineUsers[i]
+        console.info('查找头像：' + u.id + '=' + data.from + ',avatar:' + u.avatar)
+        if (u.id === data.from) {
+          avatar = u.avatar
+          data['avatar'] = u.avatar
+          break
+        }
+      }
+      if (avatar == null) {
+        avatar = 'https://hnjm-oss.oss-cn-hangzhou.aliyuncs.com/nohead.png'
+      }
+      data['avatar'] = avatar // 赋予头像
       this.messageIdArr.push(data.id)
       this.messageList.push(data)
       this.adjustChatUIScroll()
@@ -332,33 +306,6 @@ export default {
         this.hideFooter()
         return
       }
-      let token = localStorage.getItem('token')
-      // t=3 表示一下；t=4 请他喝酒
-      if (t == 3) {
-        if (this.giftList && this.giftList.lenght > 0) {
-          return
-        }
-        let purpose = 'denote'
-        Indicator.open()
-        this.$get(`/mch/gift/${purpose}`, {'APP-Token': token}).then(res => {
-          Indicator.close()
-          if (res.ret === 0) {
-            this.giftList = res.data.records
-          }
-        })
-      }
-      if (t == 4) {
-        if (this.beerList && this.beerList.lenght > 0) {
-          return
-        }
-        Indicator.open()
-        this.$get(`/mch/goods/list`, {'APP-Token': token}).then(res => {
-          Indicator.close()
-          if (res.ret === 0) {
-            this.beerList = res.data.records
-          }
-        })
-      }
       this.showType = t
       this.adjustChatUIScroll()
       if (t == 1 && !this.emotionSiper) {
@@ -369,16 +316,17 @@ export default {
       this.showType = -1
     },
     /**
-     * 获取历史聊天记录
-     * @returns {g.a}
+     * 获取群聊历史消息数据
+     * @returns {O.a}
      */
     fetchHistoryData () {
+      // let groupId = 'a91ed8049a6043f4b5e5992446f84b44' // 群组消息
       let token = localStorage.getItem('token')
-      return this.$get('/userMessage/records', {
+      return this.$get('/userMessage/group/msg', {
         'APP-Token': token,
         pageNum: this.pageNum,
         pageSize: this.count,
-        reveiver: this.toId
+        groupId: this.groupId
       })
     },
     /**
@@ -397,7 +345,6 @@ export default {
         }
         this.pageNum++
         const items = res.data.chatRecords.records
-        // const reveiver = res.data.chatRecords.reveiver
         if (items.length < this.count) {
           this.isLoadOver = !0
         }
@@ -420,7 +367,6 @@ export default {
         if (res.ret !== 0) {
           return
         }
-        // const items = res.data.records
         const items = res.data.chatRecords.records
         if (!items || items.length <= 0) {
           this.isLoadOver = !0
@@ -432,14 +378,16 @@ export default {
         this.lastMessageTime = items[0].createTime
         this.historyMessage = items
         this.adjustChatUIScroll()
-        console.info('chatlist -> length:' + items.length)
-        console.info('chatlist -> list:' + JSON.stringify(items))
       }).catch(err => {
         Indicator.close()
         console.log(err)
       })
     },
     isShowMsgTime (message, idx, messageList) {
+      // debugger
+      // if (message.data.msgType == this.msgType.EVAL && !message.data.body.result) {
+      //   return !1
+      // }
       if (idx == 0) {
         return !0
       }
@@ -536,7 +484,6 @@ export default {
       }
       let extras = {'avatar': '' + this.userInfo.avatar + ''}
       const message = this.im.send(type, data, isRealSend, extras)
-
       if (type == this.msgType.IMG) {
         message.isLoading = !0
       }
@@ -544,66 +491,7 @@ export default {
       this.saveMsg(message)
       return message
     },
-    // 微信支付
-    wxpay (data, item) {
-      let self = this
-      const {appId, timeStamp, nonceStr, signType, paySign} = data.payParams
-      function onBridgeReady () {
-        WeixinJSBridge.invoke(
-          'getBrandWCPayRequest', {
-            'appId': appId,
-            'timeStamp': timeStamp,
-            'nonceStr': nonceStr,
-            'package': data.payParams.package,
-            'signType': signType,
-            'paySign': paySign
-          },
-          function (res) {
-            if (res.err_msg == 'get_brand_wcpay_request:ok') {
-              Toast('送出成功！')
-              const option = {
-                image: item.image,
-                giftName: item.name,
-                id: item.id,
-                giftPrice: item.price
-              }
-              self.sendMsg(self.msgType.ORDER, option)
-              self.hideFooter()
-            }
-          })
-      }
-      if (typeof WeixinJSBridge == 'undefined') {
-        if (document.addEventListener) {
-          document.addEventListener('WeixinJSBridgeReady', onBridgeReady, false)
-        } else if (document.attachEvent) {
-          document.attachEvent('WeixinJSBridgeReady', onBridgeReady)
-          document.attachEvent('onWeixinJSBridgeReady', onBridgeReady)
-        }
-      } else {
-        onBridgeReady()
-      }
-    },
-    // 送礼物
-    sendDrink (type, item) {
-      if (item.price > 0) {
-        // 需要先微信支付
-        // source：1-打招呼，2-表示，3-请TA喝酒, 5-查看打出招呼，6-查看被打的招呼
-        this.$post(`/pay/create_order/${type}?amount=${item.price}&deliveryUserId=${this.toId}&goodName=${item.name}&description=${item.name}`, {
-          'APP-Token': localStorage.getItem('token')
-        }).then(res => {
-          this.wxpay(res, item)
-        })
-      } else {
-        const data = {
-          image: item.image,
-          giftName: item.name,
-          id: item.id,
-          giftPrice: item.price
-        }
-        this.sendMsg(this.msgType.ORDER, data)
-        this.hideFooter()
-      }
-    },
+
     saveMsg (message) {
       this.messageList.push(Object.assign({
         createTime: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString().slice(0, -1),
@@ -798,21 +686,19 @@ export default {
     }
   },
   mounted () {
-    this.title = this.$route.query.nickname // 对方的昵称：标题显示
-    this.toId = this.$route.query.id
+    let chatType = 1 // 群聊
+    // this.groupId = 'a91ed8049a6043f4b5e5992446f84b44' // 酒吧ID
     this.from = this.userInfo.id
+    this.groupId = this.barInfo.bar.id // 酒吧ID
     this.myAvatar = this.userInfo.avatar // 我的头像
     this.myNickName = this.userInfo.nickname // 我的昵称
-    let chatType = 2 // 私聊
     this.createEmotionMap()
     this.loadHistoryMessage()
     this.im = new IM()
     this.im.chatType = chatType
-    this.im.to = this.toId
+    // this.im.to = this.$route.query.id
     this.im.from = this.userInfo.id // 用户ID
-    // let groupId = 'a91ed8049a6043f4b5e5992446f84b44' // 酒吧ID
-    let groupId = this.barInfo.bar.id // 酒吧ID
-    this.im.getSevicer(chatType, this.userInfo.id, groupId).then(() => {
+    this.im.getSevicer(chatType, this.userInfo.id, this.groupId).then(() => {
       this.initIMListener()
     })
   },
@@ -980,18 +866,6 @@ export default {
           height: auto;
           max-width: 100%;
           border-radius: 0.1rem;
-        }
-      }
-      .pic_order{
-        max-width: 5rem;
-        img{
-          max-width: 1.2rem;
-          display: inline-block;
-          vertical-align: middle;
-        }
-        span{
-          font-size: .24rem;
-          color: blue;
         }
       }
     }
